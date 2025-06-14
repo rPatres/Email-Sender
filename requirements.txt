@@ -1,0 +1,4 @@
+idna
+Pillow
+pywin32
+requests
