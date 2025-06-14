@@ -9,6 +9,36 @@
   <img src="https://i.postimg.cc/Xv1B9z0j/image.png"/>
 </p>
 
+
+
+
+### Features
+
+- **Send Emails**  
+  Connects to your SMTP servers and sends an HTML file to the listed recipient emails. Supports custom settings such as spoofed sender, reply-to address, subject, and more.
+
+- **Check SMTP**  
+  Verifies if your configured SMTP server is active and fully functional.
+
+- **Check Recipient Emails**  
+  Displays all recipient email addresses listed in the `emails.txt` file.
+
+- **Add SMTP Server**  
+  Adds a new SMTP server to the configuration. This server will be used for sending emails and performing checks.
+
+- **Remove SMTP Server**  
+  Allows you to select and delete an existing SMTP server from DarkLine.
+
+- **Exit**  
+  Safely exits DarkLine and clears all local temporary files to enhance anonymity. *For best results, we recommend always exiting using this option.*
+  <br>
+
+
+
+
+
+
+
 <p align="center">
   <img src="https://img.shields.io/badge/License-%23bcbcbc?style=for-the-badge&logo=GitBook&logoColor=bcbcbc&labelColor=black&link=https%3A%2F%2Fopensource.org%2Flicense%2Fmit"/>
   <img src="https://img.shields.io/badge/Undetected-%23bcbcbc?style=for-the-badge&logo=hackaday&logoColor=bcbcbc&labelColor=black"/>
