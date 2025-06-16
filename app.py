@@ -9,7 +9,6 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import sys
 import ctypes
@@ -25,39 +24,28 @@ os.system('title darkline')
 
 def set_window_icon(icon_source='logo.png'):
     try:
-
         hwnd = win32gui.GetForegroundWindow()
-        
         if icon_source.startswith(('http://', 'https://')):
             response = requests.get(icon_source)
             image = Image.open(BytesIO(response.content))
         else:
             image = Image.open(icon_source)
-        
         icon_path = os.path.abspath('temp_icon.ico')
         image.save(icon_path, format='ICO')
-        
         icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
         hicon = win32gui.LoadImage(None, icon_path, win32con.IMAGE_ICON, 0, 0, icon_flags)
-        
         if hicon:
-
             win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
             win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
-            
             ctypes.windll.user32.SendMessageW(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
             ctypes.windll.user32.SendMessageW(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
-            
             win32gui.DestroyIcon(hicon)
-        
         if os.path.exists(icon_path):
             os.remove(icon_path)
-            
     except Exception as e:
         logger.error(f"Failed to set window icon: {str(e)}")
-        print(f"Error setting icon: {str(e)}")
 
-set_window_icon('https://i.postimg.cc/g0nxDHsG/logo.png') 
+set_window_icon('https://i.postimg.cc/g0nxDHsG/logo.png')
 
 smtp_details = []
 email_details = {
@@ -70,7 +58,6 @@ email_details = {
     "body_file": ""
 }
 
-# File to store SMTP credentials
 SMTP_FILE = "smtp_servers.json"
 
 def load_smtp_servers():
@@ -91,20 +78,16 @@ def save_smtp_servers():
         logger.error(f"Error saving SMTP servers: {str(e)}")
 
 def generate_random_text(length=35):
-    characters = string.ascii_lowercase + string.digits
-    return ''.join(random.choice(characters) for _ in range(length))
+    return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(length))
 
 def update_title():
     while True:
-        random_text = generate_random_text()
-        os.system(f'title {random_text}')
+        os.system(f'title {generate_random_text()}')
         time.sleep(1)
 
-# Start the title update thread
 title_thread = threading.Thread(target=update_title, daemon=True)
 title_thread.start()
 
-# Load saved SMTP servers on startup
 load_smtp_servers()
 
 ASCII_ART = r'''
@@ -127,7 +110,10 @@ class CustomFormatter(logging.Formatter):
     def format(self, record):
         record.asctime = self.formatTime(record)
         icons = {
-            logging.INFO: "ℹ️", logging.WARNING: "⚠️", logging.ERROR: "❌", logging.CRITICAL: "🔥"
+            logging.INFO: "ℹ️", 
+            logging.WARNING: "⚠️", 
+            logging.ERROR: "❌", 
+            logging.CRITICAL: "🔥"
         }
         return f"{record.asctime} {icons.get(record.levelno, '')} [{record.levelname}]: {record.getMessage()}"
 
@@ -139,23 +125,19 @@ console_handler.setFormatter(CustomFormatter('%(asctime)s - %(levelname)s - %(me
 logger.addHandler(console_handler)
 
 def set_smtp_credentials():
-    print()  # Clear line
+    print()
     print(" " * 19 + "Enter SMTP Server Details:")
     server = input(" " * 19 + "SMTP Server: ").strip()
     port = int(input(" " * 19 + "Port: ").strip())
     username = input(" " * 19 + "Username: ").strip()
     password = input(" " * 19 + "Password: ").strip()
-    
     smtp_details.append({
         "server": server,
         "port": port,
         "username": username,
         "password": password
     })
-    
-    # Save the updated SMTP servers
     save_smtp_servers()
-    
     print(" " * 19 + "SMTP server added successfully!")
     print(" " * 19 + "> ", end="", flush=True)
 
@@ -164,12 +146,10 @@ def remove_smtp_server():
         print(" " * 19 + "No SMTP servers configured.")
         print(" " * 19 + "> ", end="", flush=True)
         return
-        
-    print()  # Clear line
+    print()
     print(" " * 19 + "Configured SMTP Servers:")
     for i, smtp in enumerate(smtp_details, 1):
         print(" " * 19 + f"{i}. {smtp['server']} ({smtp['username']})")
-    
     try:
         choice = int(input("\n" + " " * 19 + "Enter number to remove (0 to cancel): ").strip())
         if choice == 0:
@@ -182,29 +162,24 @@ def remove_smtp_server():
             print(" " * 19 + "Invalid choice.")
     except ValueError:
         print(" " * 19 + "Please enter a valid number.")
-    
     print(" " * 19 + "> ", end="", flush=True)
 
 def load_email_body(body_file):
     if os.path.exists(body_file):
         with open(body_file, 'r', encoding='utf-8') as f:
             return f.read()
-    else:
-        logger.error(f"Email body file '{body_file}' does not exist.")
-        return None
+    logger.error(f"Email body file '{body_file}' does not exist.")
+    return None
 
 def send_email(smtp_details, recipient, email_details):
     if not smtp_details:
         logger.error("No SMTP servers configured. Please add SMTP servers first.")
         return False
-        
     smtp = random.choice(smtp_details)
     body = load_email_body(email_details['body_file'])
     if body is None:
         return False
-
     msg = MIMEMultipart()
-    
     if email_details['punycode']:
         local_part, domain_part = email_details['display_email'].split('@')
         encoded_domain = idna.encode(domain_part).decode('utf-8')
@@ -218,7 +193,6 @@ def send_email(smtp_details, recipient, email_details):
     msg['Subject'] = email_details['subject']
     msg['Date'] = formatdate(localtime=True)
     msg.attach(MIMEText(body, 'html', 'utf-8'))
-
     try:
         server = smtplib.SMTP(smtp['server'], smtp['port'], timeout=30)
         server.ehlo()
@@ -248,9 +222,8 @@ def batch_process(recipients, batch_size, email_details):
         if send_email(smtp_details, recipient, email_details):
             email_count += 1
             print(" " * 19 + f"Email sent to {recipient}")
-        
-            delay = random.randint(2, 5)
-            time.sleep(delay)
+        delay = random.randint(2, 5)
+        time.sleep(delay)
     return email_count
 
 def main():
@@ -258,7 +231,6 @@ def main():
         print(" " * 19 + "No SMTP servers configured. Please add SMTP servers first.")
         print(" " * 19 + "> ", end="", flush=True)
         return
-        
     print()
     print(" " * 19 + "Enter Email Details:")
     display_name = input(" " * 19 + "Display Name: ").strip()
@@ -267,8 +239,7 @@ def main():
     subject = input(" " * 19 + "Subject: ").strip()
     body_file = input(" " * 19 + "HTML File Path: ").strip()
     batch_size = int(input(" " * 19 + "Batch Size: ").strip())
-    print() 
-
+    print()
     email_details.update({
         "batch_size": batch_size,
         "punycode": True,
@@ -278,25 +249,19 @@ def main():
         "subject": subject,
         "body_file": body_file
     })
-
     recipients = load_recipients('emails.txt')
     if not recipients:
         print(" " * 19 + "No recipients found. Exiting.")
         return
-
     total_batches = (len(recipients) + batch_size - 1) // batch_size
     total_emails_sent = 0
-    
     for i in range(0, len(recipients), batch_size):
         batch = recipients[i:i + batch_size]
         current_batch = i // batch_size + 1
-        
         print(" " * 19 + f"Batch {current_batch} of {total_batches}")
-        print() 
-        
+        print()
         emails_sent = batch_process(batch, batch_size, email_details)
         total_emails_sent += emails_sent
-        
         if i + batch_size < len(recipients):
             print()
             animation = ['/', '-', '\\', '|']
@@ -309,7 +274,6 @@ def main():
             print("\r" + " " * 100)
             print()
             print()
-    
     print()
     batch_text = "batch" if total_batches == 1 else "batches"
     print(" " * 19 + f"Sent {total_emails_sent} emails with {total_batches} {batch_text}")
@@ -320,18 +284,15 @@ def check_smtp():
         print(" " * 19 + "No SMTP servers configured. Please add SMTP servers first.")
         print(" " * 19 + "> ", end="", flush=True)
         return
-        
     print()
     print(" " * 20 + "Checking SMTP servers...")
     for smtp in smtp_details:
-
         animation = ['/', '-', '\\', '|']
         for _ in range(10):
             for char in animation:
                 sys.stdout.write("\r" + " " * 20 + f"Testing {smtp['server']} {char}")
                 sys.stdout.flush()
                 time.sleep(0.1)
-        
         try:
             server = smtplib.SMTP(smtp['server'], smtp['port'], timeout=30)
             server.ehlo()
@@ -354,8 +315,50 @@ def check_recipients():
         print(" " * 20 + "No recipients found in emails.txt")
     print(" " * 20 + "> ", end="", flush=True)
 
-def display_menu():
+def clear_cache():
+    try:
+        if os.path.exists('temp_icon.ico'):
+            os.remove('temp_icon.ico')
+        if os.path.exists('__pycache__'):
+            import shutil
+            shutil.rmtree('__pycache__')
+        if os.path.exists('.pytest_cache'):
+            import shutil
+            shutil.rmtree('.pytest_cache')
+        if os.path.exists('.coverage'):
+            os.remove('.coverage')
+        if os.path.exists('htmlcov'):
+            import shutil
+            shutil.rmtree('htmlcov')
+        if os.path.exists('.mypy_cache'):
+            import shutil
+            shutil.rmtree('.mypy_cache')
+        if os.path.exists('.ruff_cache'):
+            import shutil
+            shutil.rmtree('.ruff_cache')
+        if os.path.exists('.hypothesis'):
+            import shutil
+            shutil.rmtree('.hypothesis')
+        if os.path.exists('.tox'):
+            import shutil
+            shutil.rmtree('.tox')
+        if os.path.exists('.eggs'):
+            import shutil
+            shutil.rmtree('.eggs')
+        if os.path.exists('build'):
+            import shutil
+            shutil.rmtree('build')
+        if os.path.exists('dist'):
+            import shutil
+            shutil.rmtree('dist')
+        if os.path.exists('*.egg-info'):
+            import glob
+            for egg in glob.glob('*.egg-info'):
+                shutil.rmtree(egg)
+    except Exception as e:
+        logger.error(f"Error clearing cache: {str(e)}")
 
+def display_menu():
     art_lines = ASCII_ART.strip().split('\n')
     max_width = max(len(line.rstrip()) for line in art_lines)
     terminal_width = 120
@@ -370,7 +373,7 @@ def display_menu():
         print(" " * 20 + "3. Check Receiver Emails")
         print(" " * 20 + "4. Add SMTP Server")
         print(" " * 20 + "5. Remove SMTP Server")
-        print(" " * 20 + "6. Exit")
+        print(" " * 20 + "6. Exit & Clear Cache")
         if first_time:
             print(" " * 20 + "> ", end="", flush=True)
         else:
@@ -394,13 +397,12 @@ def display_menu():
     logger.addHandler(MenuStreamHandler())
 
     clear_screen()
-    show_menu(first_time=True) 
+    show_menu(first_time=True)
 
     while True:
         choice = input().strip()
         clear_screen()
         show_menu(first_time=False)
-         
         if choice == "1":
             main()
         elif choice == "2":
@@ -412,6 +414,8 @@ def display_menu():
         elif choice == "5":
             remove_smtp_server()
         elif choice == "6":
+            logger.info("Clearing cache and exiting...")
+            clear_cache()
             logger.info("Goodbye!")
             break
         else:
