@@ -179,7 +179,13 @@ def send_email(smtp_details, recipient, email_details):
     body = load_email_body(email_details['body_file'])
     if body is None:
         return False
-    msg = MIMEMultipart()
+
+    msg = MIMEMultipart('alternative')
+    
+    domain = smtp['server']
+    message_id = f"<{generate_random_text(20)}@{domain}>"
+    
+    # Set basic headers
     if email_details['punycode']:
         local_part, domain_part = email_details['display_email'].split('@')
         encoded_domain = idna.encode(domain_part).decode('utf-8')
@@ -187,17 +193,42 @@ def send_email(smtp_details, recipient, email_details):
         msg['From'] = f"{email_details['display_name']} <{encoded_display_email}>"
     else:
         msg['From'] = f"{email_details['display_name']} <{email_details['display_email']}>"
+    
     msg['Sender'] = smtp['server']
     msg['Reply-To'] = f"{email_details['display_name']} <{email_details['reply_email']}>"
     msg['To'] = recipient
     msg['Subject'] = email_details['subject']
     msg['Date'] = formatdate(localtime=True)
+    msg['Message-ID'] = message_id
+    msg['X-Mailer'] = 'Microsoft Outlook Express 6.00.2900.2869'
+    msg['X-MimeOLE'] = 'Produced By Microsoft MimeOLE V6.00.2900.2869'
+    msg['X-Priority'] = '1'
+    msg['X-MSMail-Priority'] = 'High'
+    msg['Importance'] = 'High'
+    msg['X-Authentication-Warning'] = smtp['server']
+    msg['List-Unsubscribe'] = f"<mailto:{email_details['reply_email']}?subject=unsubscribe>"
+    msg['Precedence'] = 'bulk'
+    msg['X-Auto-Response-Suppress'] = 'OOF, AutoReply'
+    msg['Auto-Submitted'] = 'auto-generated'
+    
+    msg['DKIM-Signature'] = f"v=1; a=rsa-sha256; c=relaxed/relaxed; d={domain}; s=selector; h=From:To:Subject:Date:Message-ID; bh={generate_random_text(44)}=; b={generate_random_text(344)}"
+    msg['ARC-Authentication-Results'] = f"i=1; {domain}; spf=pass smtp.mailfrom={smtp['username']}; dkim=pass header.d={domain}; dmarc=pass action=none header.from={domain}"
+    msg['Authentication-Results'] = f"{domain}; spf=pass smtp.mailfrom={smtp['username']}; dkim=pass header.d={domain}; dmarc=pass action=none header.from={domain}"
+    
+    msg['MIME-Version'] = '1.0'
+    msg['Content-Type'] = 'text/html; charset="UTF-8"'
+    msg['Content-Transfer-Encoding'] = 'quoted-printable'
+    
     msg.attach(MIMEText(body, 'html', 'utf-8'))
+
     try:
         server = smtplib.SMTP(smtp['server'], smtp['port'], timeout=30)
         server.ehlo()
         server.starttls()
+        server.ehlo()
         server.login(smtp['username'], smtp['password'])
+        
+        # Add custom headers during sending
         server.sendmail(smtp['username'], recipient, msg.as_string())
         server.quit()
         return True
