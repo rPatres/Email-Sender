@@ -80,6 +80,56 @@ def save_smtp_servers():
 def generate_random_text(length=35):
     return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(length))
 
+X_MAILER_OPTIONS = [
+    'Microsoft Outlook Express 6.00.2900.2869',
+    'Microsoft Outlook 16.0',
+    'Mozilla Thunderbird 91.5.0',
+    'Apple Mail (13.4)',
+    'Google Mailer',
+    'Yahoo Mail',
+    'ProtonMail',
+    'Postbox 7.0',
+    'The Bat! v9.3',
+    'eM Client 8.2',
+    'Spark',
+    'Mailbird 2.9',
+    'Windows Mail 10.0',
+    'KMail 5.14',
+    'Evolution 3.42',
+    'Claws Mail 3.18',
+    'Sylpheed 3.7',
+    'Thunderbird 102.0',
+    'Outlook 365',
+    'Gmail Web Client'
+]
+
+X_MIMEOLE_OPTIONS = [
+    'Produced By Microsoft MimeOLE V6.00.2900.2869',
+    'Produced By Microsoft MimeOLE V16.0.4266.1001',
+    'Produced By Mozilla Thunderbird',
+    'Produced By Apple Mail',
+    'Produced By Google Mail',
+    'Produced By Yahoo Mail',
+    'Produced By ProtonMail',
+    'Produced By Postbox',
+    'Produced By The Bat!',
+    'Produced By eM Client',
+    'Produced By Spark',
+    'Produced By Mailbird',
+    'Produced By Windows Mail',
+    'Produced By KMail',
+    'Produced By Evolution',
+    'Produced By Claws Mail',
+    'Produced By Sylpheed',
+    'Produced By Thunderbird',
+    'Produced By Outlook 365',
+    'Produced By Gmail'
+]
+
+X_PRIORITY_OPTIONS = ['1', '3', '5']
+
+IMPORTANCE_OPTIONS = ['High', 'Normal', 'Low']
+
 def update_title():
     while True:
         os.system(f'title {generate_random_text()}')
@@ -200,11 +250,11 @@ def send_email(smtp_details, recipient, email_details):
     msg['Subject'] = email_details['subject']
     msg['Date'] = formatdate(localtime=True)
     msg['Message-ID'] = message_id
-    msg['X-Mailer'] = 'Microsoft Outlook Express 6.00.2900.2869'
-    msg['X-MimeOLE'] = 'Produced By Microsoft MimeOLE V6.00.2900.2869'
-    msg['X-Priority'] = '1'
-    msg['X-MSMail-Priority'] = 'High'
-    msg['Importance'] = 'High'
+    msg['X-Mailer'] = random.choice(X_MAILER_OPTIONS)
+    msg['X-MimeOLE'] = random.choice(X_MIMEOLE_OPTIONS)
+    msg['X-Priority'] = random.choice(X_PRIORITY_OPTIONS)
+    msg['X-MSMail-Priority'] = msg['X-Priority'] # Keep X-MSMail-Priority consistent with X-Priority
+    msg['Importance'] = random.choice(IMPORTANCE_OPTIONS)
     msg['X-Authentication-Warning'] = smtp['server']
     msg['List-Unsubscribe'] = f"<mailto:{email_details['reply_email']}?subject=unsubscribe>"
     msg['Precedence'] = 'bulk'
