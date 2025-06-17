@@ -6,7 +6,7 @@ import random
 import string
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formatdate
+from email.utils import formatdate, mktime_tz, localtime
 import os
 import time
 import threading
@@ -130,6 +130,19 @@ X_PRIORITY_OPTIONS = ['1', '3', '5']
 
 IMPORTANCE_OPTIONS = ['High', 'Normal', 'Low']
 
+MESSAGE_ID_DOMAINS = [
+    "example.com",
+    "mail.net",
+    "host.org",
+    "domain.co",
+    "server.io",
+    "sender.info",
+    "emailservice.xyz",
+    "webmail.biz",
+    "securemail.online",
+    "postoffice.site"
+]
+
 def update_title():
     while True:
         os.system(f'title {generate_random_text()}')
@@ -230,12 +243,12 @@ def send_email(smtp_details, recipient, email_details):
     if body is None:
         return False
 
-    msg = MIMEMultipart('alternative')
+    random_boundary = generate_random_text(30)
+    msg = MIMEMultipart('alternative', boundary=random_boundary)
     
-    domain = smtp['server']
-    message_id = f"<{generate_random_text(20)}@{domain}>"
+    message_id_domain = random.choice(MESSAGE_ID_DOMAINS)
+    message_id = f"<{generate_random_text(20)}@{message_id_domain}>"
     
-    # Set basic headers
     if email_details['punycode']:
         local_part, domain_part = email_details['display_email'].split('@')
         encoded_domain = idna.encode(domain_part).decode('utf-8')
@@ -253,7 +266,7 @@ def send_email(smtp_details, recipient, email_details):
     msg['X-Mailer'] = random.choice(X_MAILER_OPTIONS)
     msg['X-MimeOLE'] = random.choice(X_MIMEOLE_OPTIONS)
     msg['X-Priority'] = random.choice(X_PRIORITY_OPTIONS)
-    msg['X-MSMail-Priority'] = msg['X-Priority'] # Keep X-MSMail-Priority consistent with X-Priority
+    msg['X-MSMail-Priority'] = msg['X-Priority']
     msg['Importance'] = random.choice(IMPORTANCE_OPTIONS)
     msg['X-Authentication-Warning'] = smtp['server']
     msg['List-Unsubscribe'] = f"<mailto:{email_details['reply_email']}?subject=unsubscribe>"
@@ -261,13 +274,11 @@ def send_email(smtp_details, recipient, email_details):
     msg['X-Auto-Response-Suppress'] = 'OOF, AutoReply'
     msg['Auto-Submitted'] = 'auto-generated'
     
-    msg['DKIM-Signature'] = f"v=1; a=rsa-sha256; c=relaxed/relaxed; d={domain}; s=selector; h=From:To:Subject:Date:Message-ID; bh={generate_random_text(44)}=; b={generate_random_text(344)}"
-    msg['ARC-Authentication-Results'] = f"i=1; {domain}; spf=pass smtp.mailfrom={smtp['username']}; dkim=pass header.d={domain}; dmarc=pass action=none header.from={domain}"
-    msg['Authentication-Results'] = f"{domain}; spf=pass smtp.mailfrom={smtp['username']}; dkim=pass header.d={domain}; dmarc=pass action=none header.from={domain}"
+    msg['DKIM-Signature'] = f"v=1; a=rsa-sha256; c=relaxed/relaxed; d={message_id_domain}; s=selector; h=From:To:Subject:Date:Message-ID; bh={generate_random_text(44)}=; b={generate_random_text(344)}"
+    msg['ARC-Authentication-Results'] = f"i=1; {message_id_domain}; spf=pass smtp.mailfrom={smtp['username']}; dkim=pass header.d={message_id_domain}; dmarc=pass action=none header.from={message_id_domain}"
+    msg['Authentication-Results'] = f"{message_id_domain}; spf=pass smtp.mailfrom={smtp['username']}; dkim=pass header.d={message_id_domain}; dmarc=pass action=none header.from={message_id_domain}"
     
     msg['MIME-Version'] = '1.0'
-    msg['Content-Type'] = 'text/html; charset="UTF-8"'
-    msg['Content-Transfer-Encoding'] = 'quoted-printable'
     
     msg.attach(MIMEText(body, 'html', 'utf-8'))
 
@@ -278,7 +289,6 @@ def send_email(smtp_details, recipient, email_details):
         server.ehlo()
         server.login(smtp['username'], smtp['password'])
         
-        # Add custom headers during sending
         server.sendmail(smtp['username'], recipient, msg.as_string())
         server.quit()
         return True
